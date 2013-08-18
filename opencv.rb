@@ -67,6 +67,13 @@ class Opencv < Formula
     # OpenCL 1.1 is required, but Snow Leopard and older come with 1.0
     args << "-DWITH_OPENCL=OFF" if build.without? "opencl" or MacOS.version < :lion
 
+    # Build with OpenCL support by default.
+    if build.without? 'opencl' or MacOS.version < :lion
+      args << '-DWITH_OPENCL=OFF'
+    else
+      args << '-DWITH_OPENCL=ON'
+    end
+
     if build.with? "openni"
       args << "-DWITH_OPENNI=ON"
       # Set proper path for Homebrew's openni
