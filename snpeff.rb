@@ -2,32 +2,29 @@ require 'formula'
 
 class Snpeff < Formula
   homepage 'http://snpeff.sourceforge.net/'
-  url 'http://downloads.sourceforge.net/project/snpeff/snpEff_v3_3_core.zip'
-  version '3.3'
-  sha1 '700d4dfbd6b02c7a5c0284730e294174d1cd3684'
+  url 'https://downloads.sourceforge.net/project/snpeff/snpEff_v3_5_core.zip'
+  version '3.5g'
+  sha1 'd1371a2173f6cdc2b79ad7b2cf8b5355bb80b83e'
 
   def install
-    java = share / 'java'
-    java.install 'snpEff.jar', 'SnpSift.jar', 'snpEff.config'
-    # Install a shell script to launch snpEff.
-    bin.mkdir
-    open(bin / 'snpeff', 'w') do |file|
-      file.write <<-EOS.undent
-        #!/bin/sh
-        exec java -jar #{java}/snpEff.jar "$@" -c #{java}/snpEff.config
-      EOS
+    inreplace "scripts/snpEff" do |s|
+      s.gsub! /^jardir=.*/, "jardir=#{libexec}"
+      s.gsub! "${jardir}/snpEff.config", "#{share}/snpEff.config"
     end
+
+    bin.install "scripts/snpEff"
+    libexec.install "snpEff.jar", "SnpSift.jar"
+    share.install "snpEff.config", "scripts", "galaxy"
   end
 
-  def caveats
-    puts <<-EOS.undent
+  def caveats; <<-EOS.undent
       Download the human database using the command
-          snpeff download -v GRCh37.71
-      The databases will be installed in ~/snpEff/data
+          snpEff download -v GRCh37.74
+      The databases will be installed in #{share}/data
     EOS
   end
 
   test do
-    system "#{bin}/snpeff 2>&1 |grep -q snpEff"
+    system "#{bin}/snpEff 2>&1 |grep -q snpEff"
   end
 end

@@ -2,13 +2,12 @@ require 'formula'
 
 class Mrbayes < Formula
   homepage 'http://mrbayes.sourceforge.net/'
-  url 'http://downloads.sourceforge.net/project/mrbayes/mrbayes/3.2.1/mrbayes-3.2.1.tar.gz'
-  sha1 '8fcb2b7055bde57b33120e6d17ce1a12e399a9a8'
+  url 'https://downloads.sourceforge.net/project/mrbayes/mrbayes/3.2.2/mrbayes-3.2.2.tar.gz'
+  sha1 '6f469f595a3dbd2f8394cb29bc70ca1773338ac8'
 
   head 'https://mrbayes.svn.sourceforge.net/svnroot/mrbayes/trunk/'
 
   option 'with-beagle', 'Build with BEAGLE library support'
-  option 'with-mpi', 'Build with MPI parallel support'
 
   depends_on :autoconf => :build
   depends_on :automake => :build
@@ -24,12 +23,12 @@ class Mrbayes < Formula
     args = ["--disable-debug", "--prefix=#{prefix}"]
 
     if build.with? 'beagle'
-      args << "--with-beagle=#{Formula.factory('beagle').opt_prefix}"
+      args << "--with-beagle=#{Formula["beagle"].opt_prefix}"
     else
       args << "--with-beagle=no"
     end
 
-    if build.include? 'with-mpi'
+    if build.with? "mpi"
       # Open-mpi builds only with llvm-gcc due to a bug (see open-mpi formula)
       # therefore open-mpi attempts to run llvm-gcc instead of clang.
       # But MrBayes hangs with llvm-gcc!

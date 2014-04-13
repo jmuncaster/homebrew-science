@@ -2,8 +2,8 @@ require 'formula'
 
 class Sga < Formula
   homepage 'https://github.com/jts/sga'
-  url 'https://github.com/jts/sga/archive/v0.9.42.tar.gz'
-  sha1 '99b2de74edc70c8c7d945374490f06777bd9eab7'
+  url 'https://github.com/jts/sga/archive/v0.10.13.tar.gz'
+  sha1 '36d5a23a393c968120988dd94bad9d561b0e0c4e'
   head 'https://github.com/jts/sga.git'
 
   depends_on :autoconf => :build
@@ -17,8 +17,8 @@ class Sga < Formula
       system "./autogen.sh"
       system "./configure", "--disable-dependency-tracking",
                             "--prefix=#{prefix}",
-                            "--with-bamtools=#{Formula.factory('bamtools').opt_prefix}",
-                            "--with-sparsehash=#{Formula.factory('google-sparsehash').opt_prefix}/header"
+                            "--with-bamtools=#{Formula["bamtools"].opt_prefix}",
+                            "--with-sparsehash=#{Formula["google-sparsehash"].opt_prefix}"
       system "make install"
     end
   end

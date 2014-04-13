@@ -1,22 +1,26 @@
-require 'formula'
+require "formula"
 
 class Viennarna < Formula
-  homepage 'http://www.tbi.univie.ac.at/~ivo/RNA/'
-  url 'http://www.tbi.univie.ac.at/~ronny/RNA/ViennaRNA-2.1.2.tar.gz'
-  sha256 '8aee684aa39f6588379071d50a7a5f6779fd84fedc8111546042464f0013570f'
+  homepage "http://www.tbi.univie.ac.at/~ronny/RNA/"
+  url "http://www.tbi.univie.ac.at/~ronny/RNA/packages/source/ViennaRNA-2.1.6.tar.gz"
+  sha1 "04fd80cf659547959b9b90f59e04f9734e5e43ce"
 
-  option 'with-perl', 'build and install Perl interfaces'
+  option "with-perl", "Build and install Perl interface"
 
   def install
     ENV['ARCHFLAGS'] = "-arch x86_64"
-    args = ["./configure", "--disable-debug", "--disable-dependency-tracking",
-                      "--prefix=#{prefix}", "--disable-openmp"]
-    args << '--without-perl' unless build.include? 'with-perl'
-    system(*args)
+    args = ["--prefix=#{prefix}",
+            "--disable-debug",
+            "--disable-dependency-tracking",
+            "--disable-openmp"]
+    args << "--without-perl" if build.without? "perl"
+
+    system "./configure", *args
     system "make install"
   end
 
   test do
-    system "echo 'CGACGUAGAUGCUAGCUGACUCGAUGC' | #{bin}/RNAfold --MEA -p"
+    output = `echo CGACGUAGAUGCUAGCUGACUCGAUGC |#{bin}/RNAfold --MEA`
+    assert output.include?("-1.90 MEA=22.32")
   end
 end

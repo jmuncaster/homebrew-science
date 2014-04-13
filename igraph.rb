@@ -1,9 +1,9 @@
 require 'formula'
 
 class Igraph < Formula
-  homepage 'http://igraph.sourceforge.net'
-  url 'http://downloads.sourceforge.net/sourceforge/igraph/igraph-0.6.5.tar.gz'
-  sha1 'f1605c5592e8bf3c97473f7781e77b6608448f78'
+  homepage 'http://igraph.org'
+  url 'http://igraph.org/nightly/get/c/igraph-0.7.0.tar.gz'
+  sha1 '379d1cccec78435ff3fb7940d89ec9a2aa1de157'
 
   option :universal
 
@@ -17,5 +17,22 @@ class Igraph < Formula
                           "--disable-dependency-tracking",
                           "--prefix=#{prefix}"
     system "make install"
+  end
+
+  test do
+    # Adapted from http://igraph.org/c/doc/igraph-tutorial.html
+    (testpath/"igraph_test.c").write <<-EOS.undent
+      #include <igraph.h>
+
+      int main(void)
+      {
+          igraph_integer_t diameter;
+          igraph_t graph;
+          return 0;
+      }
+      EOS
+    system ENV.cc, "igraph_test.c", "-I#{include}/igraph", "-L#{lib}",
+                   "-ligraph", "-o", "igraph_test"
+    system "./igraph_test"
   end
 end

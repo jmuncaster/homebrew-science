@@ -1,28 +1,31 @@
 require 'formula'
 
 class Bedops < Formula
-  homepage 'https://code.google.com/p/bedops/'
-  url 'https://bedops.googlecode.com/files/bedops_macosx_intel_fat-v2.0.0b.tgz'
-  sha1 '4ca3844e626dae4b16a710078a3a37994fab0e69'
+  homepage 'https://github.com/bedops/bedops'
+  url 'https://github.com/bedops/bedops/archive/v2.4.1.tar.gz'
+  sha1 '0107aac81493b22f81e139a053d32bb926d0af7b'
 
-  def install
-    bin.install 'bedops'
-    libexec.install %W(bam2bed bam2starch bbms bbms.py bedextract
-      bedmap closest-features gff2bed gtf2bed sam2bed sam2starch
-      sort-bed starch starchcat starchcluster starchcluster.gnu_parallel
-      unstarch vcf2bed wig2bed)
+  head 'https://github.com/bedops/bedops.git'
+
+  env :std
+
+  fails_with :gcc do
+    build 5666
+    cause 'BEDOPS toolkit requires a C++11 compliant compiler'
   end
 
-  def caveats
-    <<-EOS.undent
-      `bedops` is installed in
-        #{bin}
-      and other executables are installed in
-        #{libexec}
-    EOS
+  def install
+    ENV.O3
+    ENV.deparallelize
+    ENV.delete('CFLAGS')
+    ENV.delete('CXXFLAGS')
+    system 'make', 'build_all_darwin_intel_fat'
+    system 'make', 'install'
+    bin.install Dir['bin/*']
+    doc.install %w[LICENSE README.md]
   end
 
   test do
-    system 'bedops', '--help'
+    system "#{bin}/bedops", '--version'
   end
 end

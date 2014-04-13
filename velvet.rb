@@ -2,34 +2,31 @@ require 'formula'
 
 class Velvet < Formula
   homepage 'http://www.ebi.ac.uk/~zerbino/velvet/'
-  url 'http://www.ebi.ac.uk/~zerbino/velvet/velvet_1.2.09.tgz'
-  sha1 'e40d59806599ac06e4b13408205b8978427177d0'
+  url 'http://www.ebi.ac.uk/~zerbino/velvet/velvet_1.2.10.tgz'
+  sha1 '216f0941609abf3a73adbba19ef1f364df489d18'
 
   head 'https://github.com/dzerbino/velvet.git'
 
-  def install
-    inreplace 'Makefile' do |s|
-      # recommended in Makefile for compiling on Mac OS X
-      s.change_make_var! "CFLAGS", "-Wall -m64"
-    end
+  option 'with-maxkmerlength=<value>', 'Specify maximum k-mer length, any positive odd integer (default: 31)'
+  option 'with-categories=<value>', 'Specify number of categories, any positive integer (default: 1)'
 
-    args = ["OPENMP=1", "LONGSEQUENCES=1"]
-    if ENV['MAXKMERLENGTH']
-      args << ("MAXKMERLENGTH=" + ENV['MAXKMERLENGTH'])
-    end
+  def install
+    args = ["CFLAGS=-Wall -m64", "LONGSEQUENCES=1"]
+    args << "OPENMP=1" unless ENV.compiler == :clang
+    maxkmerlength = ARGV.value('with-maxkmerlength') || '-1'
+    categories = ARGV.value('with-categories') || '-1'
+    args << "MAXKMERLENGTH=#{maxkmerlength}" if maxkmerlength.to_i > 0
+    args << "CATEGORIES=#{categories}" if categories.to_i > 0
 
     system "make", "velveth", "velvetg", *args
     bin.install 'velveth', 'velvetg'
 
     # install additional contributed scripts
-    (share/'velvet/contrib').install Dir['contrib/shuffleSequences_fasta/shuffleSequences_*']
+    (share / 'velvet/contrib').install Dir['contrib/shuffleSequences_fasta/shuffleSequences_*']
   end
 
   def caveats
     <<-EOS.undent
-      If you want to build with a different kmer length, you can set
-      MAXKMERLENGTH=X to a value (X) *before* you brew this formula.
-
       Some additional user contributed scripts are installed here:
       #{share}/velvet/contrib
     EOS

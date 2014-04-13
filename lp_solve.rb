@@ -21,28 +21,28 @@ class NumpyHasHeaders < Requirement
     unless MacOS::CLT.installed?
       s += "  * Install the 'Command Line Tools for Xcode' via the Preferences in Xcode.\n"
     end
-    s += "  * `brew tap samueljohn/python` and `brew install numpy`\n"
+    s += "  * `brew tap homebrew/python` and `brew install numpy`\n"
     s += "  * `pip install numpy`\n"
     s
   end
 end
 
-class LpSolvePython < Formula
-  homepage 'http://lpsolve.sourceforge.net/5.5/Python.htm'
-  url 'http://downloads.sourceforge.net/lpsolve/lp_solve_5.5.2.0_Python_source.tar.gz'
-  sha1 '058cced6b6a27cc160c9c5054c6b94b0eae6d989'
-  version '5.5.2.0'
-end
-
 class LpSolve < Formula
   homepage 'http://sourceforge.net/projects/lpsolve/'
-  url 'http://downloads.sourceforge.net/lpsolve/lp_solve_5.5.2.0_source.tar.gz'
+  url 'https://downloads.sourceforge.net/lpsolve/lp_solve_5.5.2.0_source.tar.gz'
   version '5.5.2.0'  # automatic version parser spits out "solve" as version
   sha1 'e2830053cf079839b9ce21662cbc886ac6d31c80'
 
   option 'python', 'Python extension to interface with lp_solve'
   depends_on 'numpy' => :python if build.include? 'python'
   depends_on NumpyHasHeaders.new if build.include? 'python'
+
+  resource 'lp_solve_python' do
+    # 'http://lpsolve.sourceforge.net/5.5/Python.htm'
+    url 'https://downloads.sourceforge.net/lpsolve/lp_solve_5.5.2.0_Python_source.tar.gz'
+    sha1 '058cced6b6a27cc160c9c5054c6b94b0eae6d989'
+    version '5.5.2.0'
+  end
 
   def patches
     # Prefer OS X's fast BLAS implementation (patch stolen from fink-project)
@@ -89,17 +89,17 @@ class LpSolve < Formula
         "--install-lib=#{temp_site_packages}",
         "--record=installed-files.txt"
       ]
-      lp_solve_prefix = prefix
-      LpSolvePython.new.brew do |b|
+
+      resource("lp_solve_python").stage do
         cd 'extra/Python' do
           # On OS X malloc there is <sys/malloc.h> and <malloc/malloc.h>
           inreplace "hash.c", "#include <malloc.h>", "#include <sys/malloc.h>"
           # We know where the lpsolve55 lib is...
-          inreplace "setup.py", "LPSOLVE55 = '../../lpsolve55/bin/ux32'", "LPSOLVE55 = '#{lp_solve_prefix}/lib'"
+          inreplace "setup.py", "LPSOLVE55 = '../../lpsolve55/bin/ux32'", "LPSOLVE55 = '#{lib}'"
           # Correct path to lpsolve's include dir and go the official way to find numpy include_dirs
           inreplace "setup.py",
                     "include_dirs=['../..', NUMPYPATH],",
-                    "include_dirs=['#{lp_solve_prefix}/include', '#{numpy_include_dir}'],"
+                    "include_dirs=['#{include}', '#{numpy_include_dir}'],"
           inreplace 'setup.py', "(NUMPY, '1')", "('NUMPY', '1')"
           # Even their version number is broken ...
           inreplace "setup.py", 'version = "5.5.0.9",', "version = '#{version}',"
@@ -107,10 +107,7 @@ class LpSolve < Formula
           system "python", "setup.py", *args
 
           # Save the examples
-          (lp_solve_prefix/'share/lp_solve').install Dir['ex*.py']
-          (lp_solve_prefix/'share/lp_solve').install 'lpdemo.py'
-          (lp_solve_prefix/'share/lp_solve').install 'Python.htm'
-
+          (share/'lp_solve').install Dir['ex*.py'], 'lpdemo.py', 'Python.htm'
         end
       end
     end

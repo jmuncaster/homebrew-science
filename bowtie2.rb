@@ -2,12 +2,17 @@ require 'formula'
 
 class Bowtie2 < Formula
   homepage 'http://bowtie-bio.sourceforge.net/bowtie2/index.shtml'
-  url 'http://downloads.sourceforge.net/project/bowtie-bio/bowtie2/2.1.0/bowtie2-2.1.0-source.zip'
-  sha256 '90a9d3a6bd19ddc3a8f90b935c6a2288478572de2ad4039b29f91016b95ef4b0'
+  url 'https://github.com/BenLangmead/bowtie2/archive/v2.2.1.tar.gz'
+  sha256 'b8561370bc472f14471fff8dd478f225c52f910c0836ad76bf917e2cd538320a'
+  head 'https://github.com/BenLangmead/bowtie2.git'
 
   def install
     system "make"
-    bin.install %W(bowtie2 bowtie2-align bowtie2-build bowtie2-inspect)
+    bin.install %w[bowtie2 bowtie2-align-l bowtie2-align-s
+      bowtie2-build bowtie2-build-l bowtie2-build-s
+      bowtie2-inspect bowtie2-inspect-l bowtie2-inspect-s]
+    doc.install %w[AUTHORS LICENSE MANUAL MANUAL.markdown NEWS README
+      TUTORIAL VERSION]
   end
 
   def test

@@ -2,15 +2,14 @@ require 'formula'
 
 class Jellyfish < Formula
   homepage 'http://www.cbcb.umd.edu/software/jellyfish/'
-  url 'http://www.cbcb.umd.edu/software/jellyfish/jellyfish-1.1.10.tar.gz'
-  sha1 '3e55b078623de02d88f1b3be825271215c243d52'
+  url 'ftp://ftp.genome.umd.edu/pub/jellyfish/jellyfish-2.0.0.tar.gz'
+  sha1 '65985a197e1fe57fd3965c055616eaafe0a748e8'
 
-  fails_with :clang do
-    build 425
-    cause <<-EOS.undent
-      The cause of this is __int128 failing with clang; the author of
-      Jellyfish is aware of this issue.
-      EOS
+  fails_with :clang
+  fails_with :llvm
+  fails_with :gcc
+  fails_with :gcc => '4.3' do
+    cause 'gcc >= 4.4 is required to compile Jellyfish.'
   end
 
   def install

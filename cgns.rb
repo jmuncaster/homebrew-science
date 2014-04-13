@@ -2,26 +2,33 @@ require 'formula'
 
 class Cgns < Formula
   homepage 'http://cgns.sourceforge.net'
-  url 'http://downloads.sourceforge.net/project/cgns/cgnslib_3.1/cgnslib_3.1.3-4.tar.gz'
-  version '3.1.3.4'  # Release d of version a.b.c (we add the release to the version)
-  sha1 '148396af2b9f6b6b273561cf4e474e667adc7508'
+  url 'https://downloads.sourceforge.net/project/cgns/cgnslib_3.2/cgnslib_3.2.1.tar.gz'
+  sha1 'ac8e4d226da9397d79385c19a7cea82b4abc1983'
 
   depends_on :fortran
   depends_on 'cmake' => :build
-  depends_on 'hdf5'
+  depends_on 'hdf5' => :recommended
+  depends_on 'szip'
 
   def install
     args = std_cmake_args + [
       '-DENABLE_FORTRAN=YES',
-      '-DENABLE_HDF5=YES',
-      '-DHDF5_NEED_ZIP=YES',
-      '-DCMAKE_SHARED_LINKER_FLAGS=-lhdf5'
+      '-DHDF5_NEED_SZIP=YES',
+      '-DENABLE_TESTS=YES'
     ]
 
-    args << '-DENABLE64_BIT' if Hardware.is_64_bit? and MacOS.version >= 10.6
+    args << '-DENABLE_64BIT=ON' if Hardware.is_64_bit? and MacOS.version >= :snow_leopard
+
+    if build.with? 'hdf5'
+      args << '-DENABLE_HDF5=YES'
+      args << '-DHDF5_NEED_ZLIB=YES'
+      args << '-DCMAKE_SHARED_LINKER_FLAGS=-lhdf5'
+    end
 
     mkdir 'build' do
       system 'cmake', '..', *args
+      system 'make'
+      system 'ctest --output-on-failure'
       system 'make install'
     end
   end

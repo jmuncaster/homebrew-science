@@ -2,8 +2,9 @@ require 'formula'
 
 class Vcftools < Formula
   homepage 'http://vcftools.sourceforge.net/index.html'
-  url 'http://downloads.sourceforge.net/project/vcftools/vcftools_0.1.11.tar.gz'
-  sha1 '00081e99c0f66316d92ee356580885331cadb46f'
+  url 'https://downloads.sourceforge.net/project/vcftools/vcftools_0.1.12a.tar.gz'
+  sha1 '66b982c67d2441f2b7fdbf2895f0749547852b13'
+  version '0.1.12a-1' # detect new release, not an alpha version
 
   def install
     system "make", "install", "PREFIX=#{prefix}", "CPP=#{ENV.cxx}"

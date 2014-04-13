@@ -2,22 +2,28 @@ require 'formula'
 
 class Vtk < Formula
   homepage 'http://www.vtk.org'
-  url 'http://www.vtk.org/files/release/5.10/vtk-5.10.1.tar.gz'  # update libdir below, too!
-  sha1 'deb834f46b3f7fc3e122ddff45e2354d69d2adc3'
+  url 'http://www.vtk.org/files/release/6.1/VTK-6.1.0.tar.gz'
+  sha1 '91d1303558c7276f031f8ffeb47b4233f2fd2cd9'
 
   head 'https://github.com/Kitware/VTK.git'
+
+  option :cxx11
 
   depends_on 'cmake' => :build
   depends_on :x11 => :optional
   depends_on 'qt' => :optional
   depends_on :python => :recommended
+  depends_on 'boost' => :recommended
+  depends_on :fontconfig => :recommended
+  depends_on 'hdf5' => :recommended
+  depends_on 'jpeg' => :recommended
+  depends_on :libpng => :recommended
+  depends_on 'libtiff' => :recommended
+  depends_on 'matplotlib' => [:python, :optional]
 
   # If --with-qt and --with-python, then we automatically use PyQt, too!
   if build.with? 'qt'
-    if build.with? 'python3'
-      depends_on 'sip'  => 'with-python3' # because python3 is optional for sip
-      depends_on 'pyqt' => 'with-python3' # because python3 is optional for pyqt
-    elsif build.with? 'python'
+    if build.with? 'python'
       depends_on 'sip'
       depends_on 'pyqt'
     end
@@ -26,15 +32,10 @@ class Vtk < Formula
   option 'examples',  'Compile and install various examples'
   option 'qt-extern', 'Enable Qt4 extension via non-Homebrew external Qt4'
   option 'tcl',       'Enable Tcl wrapping of VTK classes'
-
-  def patches
-      # Fix bug in Wrapping/Python/setup_install_paths.py: http://vtk.org/Bug/view.php?id=13699
-      DATA unless build.head?  # fixed in head already
-  end
+  option 'with-matplotlib', 'Enable matplotlib support'
+  option 'remove-legacy', 'Disable legacy APIs'
 
   def install
-    libdir = if build.head? then lib; else "#{lib}/vtk-5.10"; end
-
     args = std_cmake_args + %W[
       -DVTK_REQUIRED_OBJCXX_FLAGS=''
       -DVTK_USE_CARBON=OFF
@@ -42,16 +43,17 @@ class Vtk < Formula
       -DBUILD_TESTING=OFF
       -DBUILD_SHARED_LIBS=ON
       -DIOKit:FILEPATH=#{MacOS.sdk_path}/System/Library/Frameworks/IOKit.framework
-      -DCMAKE_INSTALL_RPATH:STRING=#{libdir}
-      -DCMAKE_INSTALL_NAME_DIR:STRING=#{libdir}
+      -DCMAKE_INSTALL_RPATH:STRING=#{lib}
+      -DCMAKE_INSTALL_NAME_DIR:STRING=#{lib}
+      -DVTK_USE_SYSTEM_EXPAT=ON
+      -DVTK_USE_SYSTEM_LIBXML2=ON
+      -DVTK_USE_SYSTEM_ZLIB=ON
     ]
 
     args << '-DBUILD_EXAMPLES=' + ((build.include? 'examples') ? 'ON' : 'OFF')
 
     if build.with? 'qt' or build.include? 'qt-extern'
-      args << '-DVTK_USE_GUISUPPORT=ON'
-      args << '-DVTK_USE_QT=ON'
-      args << '-DVTK_USE_QVTK=ON'
+      args << '-DVTK_Group_Qt=ON'
     end
 
     args << '-DVTK_WRAP_TCL=ON' if build.include? 'tcl'
@@ -71,32 +73,33 @@ class Vtk < Formula
       args << "-DTK_INTERNAL_PATH:PATH=#{MacOS.sdk_path}/System/Library/Frameworks/Tk.framework/Headers/tk-private"
     end
 
+    args << '-DModule_vtkInfovisBoost=ON' << '-DModule_vtkInfovisBoostGraphAlgorithms=ON' if build.with? 'boost'
+    args << '-DModule_vtkRenderingFreeTypeFontConfig=ON' if build.with? 'fontconfig'
+    args << '-DVTK_USE_SYSTEM_HDF5=ON' if build.with? 'hdf5'
+    args << '-DVTK_USE_SYSTEM_JPEG=ON' if build.with? 'jpeg'
+    args << '-DVTK_USE_SYSTEM_PNG=ON' if build.with? :libpng
+    args << '-DVTK_USE_SYSTEM_TIFF=ON' if build.with? 'libtiff'
+    args << '-DModule_vtkRenderingMatplotlib=ON' if build.with? 'matplotlib'
+    args << '-DVTK_LEGACY_REMOVE=ON' if build.include? 'remove-legacy'
+
+    ENV.cxx11 if build.cxx11?
+
     mkdir 'build' do
-      python do
+      if build.with? "python"
         args << '-DVTK_WRAP_PYTHON=ON'
-        # For Xcode-only systems, the headers of system's python are inside of Xcode:
-        args << "-DPYTHON_INCLUDE_DIR='#{python.incdir}'"
-        # Cmake picks up the system's python dylib, even if we have a brewed one:
-        args << "-DPYTHON_LIBRARY='#{python.libdir}/lib#{python.xy}.dylib'"
+        # CMake picks up the system's python dylib, even if we have a brewed one.
+        args << "-DPYTHON_LIBRARY='#{%x(python-config --prefix).chomp}/lib/libpython2.7.dylib'"
         # Set the prefix for the python bindings to the Cellar
-        args << "-DVTK_PYTHON_SETUP_ARGS:STRING='--prefix=#{prefix} --single-version-externally-managed --record=installed.txt'"
+        args << "-DVTK_INSTALL_PYTHON_MODULE_DIR='#{lib}/python2.7/site-packages'"
         if build.with? 'pyqt'
           args << '-DVTK_WRAP_PYTHON_SIP=ON'
-          args << "-DSIP_PYQT_DIR='#{HOMEBREW_PREFIX}/share/sip#{python.if3then3}'"
+          args << "-DSIP_PYQT_DIR='#{HOMEBREW_PREFIX}/share/sip'"
         end
-        # The make and make install have to be inside the python do loop
-        # because the PYTHONPATH is defined by this block (and not outside)
-        args << ".."
-        system 'cmake', *args
-        system 'make'
-        system 'make install'
       end
-      if not python then  # no python bindings
-        args << ".."
-        system 'cmake', *args
-        system 'make'
-        system 'make install'
-      end
+      args << ".."
+      system "cmake", *args
+      system "make"
+      system "make", "install"
     end
 
     (share+'vtk').install 'Examples' if build.include? 'examples'
@@ -104,7 +107,6 @@ class Vtk < Formula
 
   def caveats
     s = ''
-    s += python.standard_caveats if python
     s += <<-EOS.undent
         Even without the --with-qt option, you can display native VTK render windows
         from python. Alternatively, you can integrate the RenderWindowInteractor
@@ -124,18 +126,3 @@ class Vtk < Formula
   end
 
 end
-
-__END__
-diff --git a/Wrapping/Python/setup_install_paths.py b/Wrapping/Python/setup_install_paths.py
-index 00f48c8..014b906 100755
---- a/Wrapping/Python/setup_install_paths.py
-+++ b/Wrapping/Python/setup_install_paths.py
-@@ -35,7 +35,7 @@ def get_install_path(command, *args):
-                 option, value = string.split(arg,"=")
-                 options[option] = value
-             except ValueError:
--                options[option] = 1
-+                options[arg] = 1
-
-     # check for the prefix and exec_prefix
-     try:

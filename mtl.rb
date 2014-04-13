@@ -1,11 +1,23 @@
 require 'formula'
 
 class Mtl < Formula
-  homepage 'http://www.mtl4.org/'
-  url 'http://www.simunova.com/downloads/mtl4/MTL-4.0.9373-Linux.tar.bz2'
-  sha1 '4c4bb8ae61ac6788d419c843b2a50bda6cd093f1'
+  homepage 'http://www.simunova.com'
+  url 'http://www.simunova.com/downloads/mtl4/MTL-4.0.9507-Linux.tar.bz2'
+  sha1 '01e72c7d29537d3843d07755fea50c559323aacc'
+
+  head do
+    url 'https://simunova.zih.tu-dresden.de/svn/mtl4/trunk', :using => :svn
+    depends_on 'cmake' => :build
+  end
+
+  depends_on 'boost' => :build
 
   def install
-    prefix.install 'usr/include', 'usr/share'
+    if build.head?
+      system 'cmake', '-DENABLE_TESTS=OFF', '.', *std_cmake_args
+      system 'make', 'install'
+    else
+      prefix.install 'usr/include', 'usr/share'
+    end
   end
 end

@@ -2,11 +2,12 @@ require 'formula'
 
 class Lammps < Formula
   homepage 'http://lammps.sandia.gov'
-  url 'http://lammps.sandia.gov/tars/lammps-14May13.tar.gz'
-  sha1 '5e522e9e3d4a4cbbe80c01c36002489777fb65d8'
+  url 'http://lammps.sandia.gov/tars/lammps-12Feb14.tar.gz'
+  sha1 '2572cce8343862c32c6e4079b91a26637ae3c6b7'
   # lammps releases are named after their release date. We transform it to
   # YYYY.MM.DD (year.month.day) so that we get a comparable version numbering (for brew outdated)
-  version '2013.05.14'
+  version '2014.02.12'
+
   head 'http://git.icms.temple.edu/lammps-ro.git'
 
   # user-submitted packages not considered "standard"
@@ -40,13 +41,10 @@ class Lammps < Formula
     option "enable-#{package}", "Build lammps with the '#{package}' package"
   end
 
-  # additional options
-  option "with-mpi", "Build lammps with MPI support"
-
   depends_on 'fftw'
   depends_on 'jpeg'
   depends_on 'voro++'
-  depends_on :mpi => [:cxx, :f90, :optional]
+  depends_on :mpi => [:cxx, :f90, :recommended] # dummy MPI library provided in src/STUBS
   depends_on :fortran
 
   def build_lib(comp, lmp_lib, opts={})
@@ -85,6 +83,10 @@ class Lammps < Formula
     end
   end
 
+  def pyver
+    IO.popen("python -c 'import sys; print sys.version[:3]'").read.strip
+  end
+
   def install
     ENV.j1      # not parallel safe (some packages have race conditions :meam:)
 
@@ -92,7 +94,7 @@ class Lammps < Formula
     ENV.append "CFLAGS","-O"
     ENV.append "LDFLAGS","-O"
 
-    if build.include? "with-mpi"
+    if build.with? :mpi
       # Simplify by relying on the mpi compilers
       ENV["FC"]  = ENV["MPIFC"]
       ENV["CXX"] = ENV["MPICXX"]
@@ -109,7 +111,7 @@ class Lammps < Formula
     end
 
     # Assuming gfortran library
-    ENV.append 'LDFLAGS', "-L#{Formula.factory('gfortran').opt_prefix}/gfortran/lib -lgfortran"
+    ENV.append 'LDFLAGS', "-L#{Formula["gfortran"].opt_prefix}/gfortran/lib -lgfortran"
 
     # build the lammps program and library
     cd "src" do
@@ -118,7 +120,7 @@ class Lammps < Formula
         # We will stick with "make mac" type and forget about
         # "make mac_mpi" because it has some unnecessary
         # settings. We get a nice clean slate with "mac"
-        if build.include? "with-mpi"
+        if build.with? :mpi
           #-DOMPI_SKIP_MPICXX is to speed up c++ compilation
           s.change_make_var! "MPI_INC"  , "-DOMPI_SKIP_MPICXX"
           s.change_make_var! "MPI_PATH" , ""
@@ -128,12 +130,12 @@ class Lammps < Formula
         s.change_make_var! "LINK" , ENV["CXX"]
 
         # installing with FFTW and JPEG
-        s.change_make_var! "FFT_INC"  , "-DFFT_FFTW3 -I#{Formula.factory('fftw').opt_prefix}/include"
-        s.change_make_var! "FFT_PATH" , "-L#{Formula.factory('fftw').opt_prefix}/lib"
+        s.change_make_var! "FFT_INC"  , "-DFFT_FFTW3 -I#{Formula["fftw"].opt_prefix}/include"
+        s.change_make_var! "FFT_PATH" , "-L#{Formula["fftw"].opt_prefix}/lib"
         s.change_make_var! "FFT_LIB"  , "-lfftw3"
 
-        s.change_make_var! "JPG_INC"  , "-DLAMMPS_JPEG -I#{Formula.factory('jpeg').opt_prefix}/include"
-        s.change_make_var! "JPG_PATH" , "-L#{Formula.factory('jpeg').opt_prefix}/lib"
+        s.change_make_var! "JPG_INC"  , "-DLAMMPS_JPEG -I#{Formula["jpeg"].opt_prefix}/include"
+        s.change_make_var! "JPG_PATH" , "-L#{Formula["jpeg"].opt_prefix}/lib"
         s.change_make_var! "JPG_LIB"  , "-ljpeg"
 
         s.change_make_var! "CCFLAGS" , ENV["CFLAGS"]
@@ -155,7 +157,7 @@ class Lammps < Formula
         system "make", "yes-" + pkg if build.include? "enable-" + pkg
       end
 
-      unless build.include? "with-mpi"
+      if build.without? :mpi
         # build fake mpi library
         cd "STUBS" do
           system "make"
@@ -226,9 +228,9 @@ class Lammps < Formula
       Additional tools (may require manual installation):
       #{HOMEBREW_PREFIX}/share/lammps/tools
 
-    To use the Python module with non-homebrew Python, you need to amend your
+    To use the Python module with Python, you need to amend your
     PYTHONPATH like so:
-      export PYTHONPATH=#{HOMEBREW_PREFIX}/lib/python2.7/site-packages:$PYTHONPATH
+      export PYTHONPATH=#{HOMEBREW_PREFIX}/lib/python#{pyver}/site-packages:$PYTHONPATH
 
     EOS
   end

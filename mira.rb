@@ -2,7 +2,7 @@ require 'formula'
 
 class Mira < Formula
   homepage 'http://sourceforge.net/apps/mediawiki/mira-assembler/'
-  url 'http://downloads.sourceforge.net/project/mira-assembler/MIRA/stable/mira-3.4.1.1.tar.gz'
+  url 'https://downloads.sourceforge.net/project/mira-assembler/MIRA/stable/mira-3.4.1.1.tar.gz'
   sha1 '86bcf87f88296df4c3cce1d871e99a5bc3ca1dfd'
 
   depends_on 'boost'
@@ -19,8 +19,8 @@ class Mira < Formula
     system "./configure", "--disable-debug",
                           "--disable-dependency-tracking",
                           "--prefix=#{prefix}",
-                          "--with-expat=#{Formula.factory('expat').opt_prefix}",
-                          "--with-boost=#{Formula.factory('boost').opt_prefix}"
+                          "--with-expat=#{Formula["expat"].opt_prefix}",
+                          "--with-boost=#{Formula["boost"].opt_prefix}"
     # Link with boost_system for boost::system::system_category().
     # http://www.freelists.org/post/mira_talk/Linking-requires-boost-system
     system "make LIBS=-lboost_system-mt install"
