@@ -11,6 +11,7 @@ class Opencv < Formula
   option "with-tbb", "Enable parallel code in OpenCV using Intel TBB"
   option "with-tests", "Build with accuracy & performance tests"
   option "without-opencl", "Disable GPU code in OpenCV using OpenCL"
+  option "with-cuda", "Build with CUDA support"
 
   option :cxx11
 
@@ -29,10 +30,6 @@ class Opencv < Formula
   depends_on "qt"         => :optional
   depends_on "tbb"        => :optional
 
-  # CUDA support. nvcc requires a version of gcc between 4.4 and 4.6
-  option 'with-cuda', 'Build with CUDA support'
-  depends_on 'homebrew-versions/gcc46' => :recommended
-
   # Can also depend on ffmpeg, but this pulls in a lot of extra stuff that
   # you don't need unless you're doing video analysis, and some of it isn't
   # in Homebrew anyway. Will depend on openexr if it's installed.
@@ -45,7 +42,6 @@ class Opencv < Formula
     ENV.cxx11 if build.cxx11?
     args = std_cmake_args + %W(
       -DCMAKE_OSX_DEPLOYMENT_TARGET=
-      -DWITH_CUDA=OFF
       -DBUILD_ZLIB=OFF
       -DBUILD_TIFF=OFF
       -DBUILD_PNG=OFF
@@ -68,11 +64,11 @@ class Opencv < Formula
     args << "-DWITH_TBB=" + ((build.with? "tbb") ? "ON" : "OFF")
     args << "-DWITH_FFMPEG=" + ((build.with? "ffmpeg") ? "ON" : "OFF")
 
-    # CUDA
-    if build.with? 'cuda' and build.with? 'gcc46'
-      puts "*** Building OpenCV with CUDA support ***"
+    if build.with? "cuda"
       args << "-DWITH_CUDA=ON"
-      args << "-DCUDA_HOST_COMPILER=/usr/local/bin/gcc-4.6"
+      args << "-DCMAKE_CXX_FLAGS=-stdlib=libstdc++"
+    else
+      args << "-DWITH_CUDA=OFF"
     end
 
     # OpenCL 1.1 is required, but Snow Leopard and older come with 1.0
